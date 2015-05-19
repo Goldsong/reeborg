@@ -85,7 +85,7 @@ RUR.runner.check_func_parentheses = function(src) {
         i = i + 1;
     }
     return error_line;
-}
+};
 
 RUR.runner.Python_lint = function(src) {
     var err_line = RUR.runner.check_semicolons(src);
