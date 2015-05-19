@@ -32,12 +32,86 @@ RUR.runner.run = function (playback) {
     }
 };
 
+RUR.runner.check_semicolons = function(src) {
+    var lines = src.split('\n');
+    var l = lines.length;
+
+    var tokens = [  'if ', 'if(',
+                    'else',
+                    'elif ','elif(',
+                    'while ','while(',
+                    'for ','for(',
+                    'def '];
+    var n = tokens.length;
+
+    var semicolon_error = false;
+    var i = 0;
+    var error_line = 0;
+    while (!semicolon_error && i<l) {
+        var j = 0;
+        while (!semicolon_error && j<n){
+            var token = tokens[j];
+            var pos = lines[i].indexOf(token);
+            if (pos != -1){
+                var colon_pos = lines[i].indexOf(":");
+                if (colon_pos == -1){
+                    semicolon_error = true;
+                    error_line = i+1;
+                }
+            }
+            j = j + 1;
+        }
+        i = i + 1;
+    }
+    return error_line;
+};
+
+RUR.runner.check_func_parentheses = function(src) {
+    var lines = src.split('\n');
+    var l = lines.length;
+
+    var def_parentheses_error = false;
+    var i = 0;
+    var error_line = 0;
+    while (!def_parentheses_error && i<l) {
+        var pos = lines[i].indexOf('def ');
+        if (pos != -1){
+            var parentheses_pos = lines[i].indexOf("(");
+            if (parentheses_pos == -1){
+                def_parentheses_error = true;
+                error_line = i+1;
+            }
+        }
+        i = i + 1;
+    }
+    return error_line;
+}
+
+RUR.runner.Python_lint = function(src) {
+    var err_line = RUR.runner.check_semicolons(src);
+    if (err_line != 0){
+        var e = new Error;
+        e.__name__ = "Syntax Error";
+        e.message = "line " + String(err_line) + ": semicolon missing";
+        throw e;
+    }
+
+    var err_line = RUR.runner.check_func_parentheses(src);
+    if (err_line != 0){
+        var e = new Error;
+        e.__name__ = "Syntax Error";
+        e.message = "line " + String(err_line) + ": function definition is missing parentheses";
+        throw e;
+    }
+};
+
 RUR.runner.eval = function(src) {  // jshint ignore:line
     var error_name, info, new_message, line_no, tmp;
     try {
         if (RUR.programming_language === "javascript") {
             RUR.runner.eval_javascript(src);
         } else if (RUR.programming_language === "python") {
+            RUR.runner.Python_lint(src);
             RUR.runner.eval_python(src);
         } else if (RUR.programming_language === "coffee") {
             RUR.runner.eval_coffee(src);
